@@ -1,5 +1,6 @@
 from myiputils import *
 
+tabela_encaminhamento = []
 
 class CamadaRede:
     def __init__(self, enlace):
@@ -30,7 +31,16 @@ class CamadaRede:
         # TODO: Use a tabela de encaminhamento para determinar o próximo salto
         # (next_hop) a partir do endereço de destino do datagrama (dest_addr).
         # Retorne o next_hop para o dest_addr fornecido.
-        pass
+        global tabela_encaminhamento
+        dest_addr_binario = "".join([bin(int(x)+256)[3:] for x in dest_addr.split('.')])
+
+        for linha in tabela_encaminhamento:
+            cidr_decimal, prefix = linha[0].split('/')
+            cidr_binario = "".join([bin(int(x)+256)[3:] for x in cidr_decimal.split('.')])
+            prefix = int(prefix)
+            if cidr_binario[:prefix] == dest_addr_binario[:prefix]:
+                return linha[1]
+        return None
 
     def definir_endereco_host(self, meu_endereco):
         """
@@ -50,7 +60,14 @@ class CamadaRede:
         """
         # TODO: Guarde a tabela de encaminhamento. Se julgar conveniente,
         # converta-a em uma estrutura de dados mais eficiente.
+        global tabela_encaminhamento
+        tabela_encaminhamento = []
+        for linha in tabela:
+            cidr = linha[0]
+            next_hop = linha[1]
+            tabela_encaminhamento.append((cidr, next_hop))
         pass
+
 
     def registrar_recebedor(self, callback):
         """
