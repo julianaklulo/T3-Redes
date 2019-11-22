@@ -2,6 +2,7 @@ from myiputils import *
 
 tabela_encaminhamento = []
 
+
 class CamadaRede:
     def __init__(self, enlace):
         """
@@ -32,15 +33,36 @@ class CamadaRede:
         # (next_hop) a partir do endereço de destino do datagrama (dest_addr).
         # Retorne o next_hop para o dest_addr fornecido.
         global tabela_encaminhamento
-        dest_addr_binario = "".join([bin(int(x)+256)[3:] for x in dest_addr.split('.')])
+        dest_addr_binario = "".join([bin(int(x) + 256)[3:] for x in dest_addr.split('.')])
 
+        possiveis_cidrs = []
         for linha in tabela_encaminhamento:
             cidr_decimal, prefix = linha[0].split('/')
-            cidr_binario = "".join([bin(int(x)+256)[3:] for x in cidr_decimal.split('.')])
+            cidr_binario = "".join([bin(int(x) + 256)[3:] for x in cidr_decimal.split('.')])
             prefix = int(prefix)
             if cidr_binario[:prefix] == dest_addr_binario[:prefix]:
-                return linha[1]
-        return None
+                possiveis_cidrs.append({'binario': cidr_binario, 'hop': linha[1]})
+
+        if len(possiveis_cidrs) == 0:
+            return None
+
+        if len(possiveis_cidrs) == 1:
+            return possiveis_cidrs[0]['hop']
+
+        if len(possiveis_cidrs) > 1:
+            for p in possiveis_cidrs:
+                qtd_match = 0
+                for i in range(32):
+                    if p['binario'][i] == dest_addr_binario[i]:
+                        qtd_match += 1
+                    else:
+                        break
+                p['qtd_match'] = qtd_match
+            maior = possiveis_cidrs[0]
+            for p in possiveis_cidrs:
+                if p['qtd_match'] > maior['qtd_match']:
+                    maior = p
+            return maior['hop']
 
     def definir_endereco_host(self, meu_endereco):
         """
@@ -67,7 +89,6 @@ class CamadaRede:
             next_hop = linha[1]
             tabela_encaminhamento.append((cidr, next_hop))
         pass
-
 
     def registrar_recebedor(self, callback):
         """
