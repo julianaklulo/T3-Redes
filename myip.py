@@ -1,3 +1,4 @@
+import struct
 from myiputils import *
 
 tabela_encaminhamento = []
@@ -26,7 +27,10 @@ class CamadaRede:
             # atua como roteador
             next_hop = self._next_hop(dst_addr)
             # TODO: Trate corretamente o campo TTL do datagrama
-            self.enlace.enviar(datagrama, next_hop)
+            ttl -= 1
+            if ttl > 0:
+                # reconstruir o datagrama com o novo TTL e enviar
+                self.enlace.enviar(datagrama, next_hop)
 
     def _next_hop(self, dest_addr):
         # TODO: Use a tabela de encaminhamento para determinar o próximo salto
@@ -104,4 +108,28 @@ class CamadaRede:
         next_hop = self._next_hop(dest_addr)
         # TODO: Assumindo que a camada superior é o protocolo TCP, monte o
         # datagrama com o cabeçalho IP, contendo como payload o segmento.
+        s = str2addr(self.meu_endereco)
+        d = str2addr(dest_addr)
+ 
+        datagrama = make_ipv4_header(segmento) + s + d + segmento
         self.enlace.enviar(datagrama, next_hop)
+
+
+def make_ipv4_header(segmento, ttl=64):
+    version = 4 << 4
+    ihl = 5
+    vihl = version | ihl
+    dscp = 0 << 6
+    ecn = 0
+    dscpecn = dscp | ecn
+    total_len = len(segmento) + 20
+    identification = 0
+    flagsfrag = 0
+    ttl = ttl
+    proto = 6
+    header = struct.pack('!BBHHHBBH', vihl, dscpecn, total_len,
+        identification, flagsfrag, ttl, proto, 0)
+    checksum = calc_checksum(header)
+    novo_header = struct.pack('!BBHHHBBH', vihl, dscpecn, total_len, identification,
+                    flagsfrag, ttl, proto, checksum)
+    return novo_header
