@@ -108,14 +108,11 @@ class CamadaRede:
         next_hop = self._next_hop(dest_addr)
         # TODO: Assumindo que a camada superior é o protocolo TCP, monte o
         # datagrama com o cabeçalho IP, contendo como payload o segmento.
-        s = str2addr(self.meu_endereco)
-        d = str2addr(dest_addr)
- 
-        datagrama = make_ipv4_header(segmento) + s + d + segmento
+        datagrama = make_ipv4_header(segmento, self.meu_endereco, dest_addr) + segmento
         self.enlace.enviar(datagrama, next_hop)
 
 
-def make_ipv4_header(segmento, ttl=64):
+def make_ipv4_header(segmento, src_addr, dest_addr, ttl=64):
     version = 4 << 4
     ihl = 5
     vihl = version | ihl
@@ -127,9 +124,11 @@ def make_ipv4_header(segmento, ttl=64):
     flagsfrag = 0
     ttl = ttl
     proto = 6
-    header = struct.pack('!BBHHHBBH', vihl, dscpecn, total_len,
-        identification, flagsfrag, ttl, proto, 0)
+    s = int.from_bytes(str2addr(src_addr), "big")
+    d = int.from_bytes(str2addr(dest_addr), "big")
+    header = struct.pack('!BBHHHBBHII', vihl, dscpecn, total_len,
+        identification, flagsfrag, ttl, proto, 0, s, d)
     checksum = calc_checksum(header)
-    novo_header = struct.pack('!BBHHHBBH', vihl, dscpecn, total_len, identification,
-                    flagsfrag, ttl, proto, checksum)
+    novo_header = struct.pack('!BBHHHBBHII', vihl, dscpecn, total_len, identification,
+                    flagsfrag, ttl, proto, checksum, s, d)
     return novo_header
