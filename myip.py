@@ -30,7 +30,8 @@ class CamadaRede:
             ttl -= 1
             if ttl > 0:
                 # reconstruir o datagrama com o novo TTL e enviar
-                self.enlace.enviar(datagrama, next_hop)
+                novo_datagrama = make_ipv4_header(payload, src_addr, dst_addr, ttl) + payload
+                self.enlace.enviar(novo_datagrama, next_hop)
 
     def _next_hop(self, dest_addr):
         # TODO: Use a tabela de encaminhamento para determinar o próximo salto
